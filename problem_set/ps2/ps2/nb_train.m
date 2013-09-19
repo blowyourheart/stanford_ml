@@ -44,6 +44,17 @@ end
 prob_word(1, :) = log((prob_word(1, :) + 1) / (total_words(1) + numTokens));
 prob_word(2, :) = log((prob_word(2, :) + 1) / (total_words(2) + numTokens));
 
+% find the 5 tokens that are most indicative of the SPAM class
+log_ratio = prob_word(1,:) - prob_word(2, :);
+[ascend_log_ratio, ix] = sort(log_ratio);
+word_id_cell = importdata('TOKENS_LIST');
+for i = 1:max(size(word_id))
+    tmp = regexp(char(word_id_cell(i)), '\s+', 'split');
+    word_id(i) = tmp(2);
+end
+word_id(ix(numTokens - 4:numTokens))
+   
+
 % trainMatrix is now a (numTrainDocs x numTokens) matrix.
 % Each row represents a unique document (email).
 % The j-th column of the row $i$ represents the number of times the j-th
