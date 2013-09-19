@@ -1,4 +1,4 @@
-addpath('liblinear-1.7/matlab');  % add LIBLINEAR to the path
+% addpath('liblinear-1.7/matlab');  % add LIBLINEAR to the path
 [sparseTrainMatrix, tokenlist, trainCategory] = readMatrix('MATRIX.TRAIN');
 
 numTrainDocs = size(sparseTrainMatrix, 1);
@@ -28,6 +28,7 @@ numTokens = size(sparseTrainMatrix, 2);
 
 %---------------
 % YOUR CODE HERE
-
+svm_category = 2.*trainCategory - 1;
+model = train(svm_category', sparseTrainMatrix)
 
 %---------------

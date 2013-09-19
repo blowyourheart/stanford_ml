@@ -24,7 +24,9 @@ output = zeros(numTestDocs, 1);
 
 %---------------
 % YOUR CODE HERE
-
+svm_category = 2.*testCategory - 1;
+[output, a] = predict(svm_category', sparseTestMatrix, model);
+output = 0.5.*(output + 1);
 
 
 %---------------

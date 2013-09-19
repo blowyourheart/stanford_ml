@@ -21,7 +21,17 @@ output = zeros(numTestDocs, 1);
 
 %---------------
 % YOUR CODE HERE
-
+for i=1:numTestDocs
+    log_prob = prob_y;
+    for j=1:numTokens
+        log_prob = log_prob + testMatrix(i, j) * prob_word(:, j);
+    end
+    if log_prob(1) >= log_prob(2)
+        output(i) = 1;
+    else
+        output(i) = 0;
+    end
+end
 
 %---------------
 
