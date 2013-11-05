@@ -48,23 +48,18 @@ for iter=1:maxIteration
     loglikelihood = 0;
     %E-step
     for i=1:1:sampleNum
-        for j = 1:1:k
+        for j = 1:k
             weight(i,j)=mvnpdf(sampleMatrix(i,:),mu(j,:),reshape(sigma(j,:),dim,dim))*phi(j);
         end
-        
-        sum = 0;
-        for j = 1:1:k
-            sum = sum+weight(i,j);
-        end
-        
-        loglikelihood = loglikelihood + log(sum);
-     
-        for j = 1:1:k
-            weight(i,j)=weight(i,j)/sum;
+        %% 这里是求的给定z的分布以后的似然函数值，从公式中可以得出这个算式是正确的。
+        %% 后面的对w(i, j)进行归一化以后，就是所求的Q函数了，可以重复使用这个结果
+        sum_likelihood = sum(weight(i, :));        
+        loglikelihood = loglikelihood + log(sum_likelihood);
+        for j = 1:k
+            weight(i,j)=weight(i,j)/sum_likelihood;
         end
     end
-     
-    if abs(loglikelihood-oldlikelihood)<epsilon
+    if abs(loglikelihood-oldlikelihood) < epsilon
         break;
     else
         oldlikelihood = loglikelihood;
@@ -74,30 +69,28 @@ for iter=1:maxIteration
     %M-step
     %update phi
     for i=1:k
-        sum = 0;
+        sum_ = 0;
         for j=1:sampleNum
-            sum = sum+weight(j,i);
+            sum_ = sum_+weight(j,i);
         end
-        phi(i) = sum/sampleNum;
+        phi(i) = sum_/sampleNum;
     end
-    
     %update mu
     for i=1:k
-        sum = zeros(1,dim);
+        sum_ = zeros(1,dim);
         for j=1:sampleNum
-            sum =  sum+weight(j,i)*sampleMatrix(j,:);
+            sum_ =  sum_+weight(j,i)*sampleMatrix(j,:);
         end
         
-        mu(i,:) =  sum/(phi(i)*sampleNum);
+        mu(i,:) =  sum_/(phi(i)*sampleNum);
     end
-    
     %update sigma
     for i=1:k
-        sum = zeros(dim,dim);
+        sum_ = zeros(dim,dim);
         for j=1:sampleNum
-            sum = sum+ weight(j,i)*(sampleMatrix(j,:)-mu(i,:))'*(sampleMatrix(j,:)-mu(i,:));
+            sum_ = sum_+ weight(j,i)*(sampleMatrix(j,:)-mu(i,:))'*(sampleMatrix(j,:)-mu(i,:));
         end
-        sigma(i,:) = sum/(phi(i)*sampleNum);
+        sigma(i,:) = sum_/(phi(i)*sampleNum);
     end
 end
 iter

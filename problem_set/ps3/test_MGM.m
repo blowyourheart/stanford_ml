@@ -1,7 +1,7 @@
 %generate data from normal distribution.
 clc;
 clear all;
-mu_true= [0;20];
+mu_true= [0; 20];
 mu_true'
 sigma_true = [2; 3.5];
 sigma_true'
