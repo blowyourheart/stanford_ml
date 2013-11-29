@@ -1,4 +1,4 @@
-function [theta, ll] = logistic_newton(X,Y)
+function [theta, ll] = logistic_quasi_newton(X,Y)
 
 % rows of X are training samples, including the intercerp
 % rows of Y are corresponding 0/1 values
@@ -8,25 +8,29 @@ function [theta, ll] = logistic_newton(X,Y)
 
 
 [m,n] = size(X);
-epsilon = 1e-4;
+
 theta = zeros(n,1);
-max_iters = 50;
+max_iters = 500;
+epsilon = 1e-4;
+G = diag(ones(n, 1));
+lambda = 0.01;
+grad_last = zeros(n, 1);
 for i=1:max_iters
     grad = zeros(n,1);
     ll(i)=0;
-    H = zeros(n,n);
+    % compute gradient
     for j=1:m
         hxj = sigmoid(X(j,:)*theta);
-        grad = grad + X(j,:)'*(Y(j) - hxj);
-        H = H - hxj*(1-hxj)*X(j,:)'*X(j,:);
+        grad = grad - X(j,:)'*(Y(j) - hxj);
         % ll(i) is the likelihood of last loop's theta.
         ll(i) = ll(i) + Y(j)*log(hxj) + (1-Y(j))*log(1-hxj);
     end
     if norm(grad) <= epsilon
-        fprintf('logistic_newton iteration %d\n', i);
         break
     end
-    theta = theta - inv(H)*grad;
+    pk = -G * grad;
+    theta = theta + lambda * pk;
+    %没有实现拟牛顿算法，可能需要其他方式来弄下。
 end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
