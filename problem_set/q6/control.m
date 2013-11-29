@@ -81,7 +81,7 @@
 %%%%%%%%%% Simulation parameters %%%%%%%%%%
 
 pause_time = 0.001;
-min_trial_length_to_start_display = 0;
+min_trial_length_to_start_display = 17;
 display_started=0;
 
 NUM_STATES = 163;
@@ -103,7 +103,7 @@ time_steps_to_failure=[];
 num_failures=0;
 time_at_start_of_current_trial=0;
 
-max_failures=500; % You should reach convergence well before this.  
+max_failures=200; % You should reach convergence well before this.  
 
 % Starting state is (0 0 0 0)
 % x, x_dot, theta, theta_dot represents the actual continuous state vector
@@ -125,7 +125,11 @@ end
 % Initialize the transition probabilities uniformly (ie, probability of
 % transitioning for state x to state y using action a is exactly
 % 1/NUM_STATES). Initialize all state rewards to zero.
-
+transition_counts = zeros(NUM_STATES, NUM_STATES, 2);  % counts可以进行增量式的计数和学习。
+transition_probs = ones(NUM_STATES, NUM_STATES, 2) / NUM_STATES;
+reward_counts = zeros(NUM_STATES, 2);
+reward = zeros(NUM_STATES, 1);
+value = rand(NUM_STATES, 1) * 0.1;
 
 %%%% END YOUR CODE %%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -140,10 +144,10 @@ end
 % converged within one value function iteration. Intuitively, it seems
 % like there will be little learning after this, so end the simulation
 % here, and say the overall algorithm has converged. 
-
-while num_failures<max_failures
-% while (number of consecutive no learning trials < NO_LEARNING_THRESHOLD)
-
+% 按照课后给的参考答案，我拷贝过去并修改了下，虽然到最后每一轮迭代的次数都有所增加
+% 但是到最后都没有收敛起来，不知道怎么回事。程序对照了下，也没有问题呀！
+consecutive_no_learning_trials = 0;
+while (num_failures < max_failures && consecutive_no_learning_trials < NO_LEARNING_THRESHOLD)
 
   %%% CODE HERE: Write code to choose action (1 or 2) %%%
 
@@ -152,20 +156,19 @@ while num_failures<max_failures
   % problems!  Replace it with your code to choose an action that is
   % optimal according to the current value function, and the current MDP
   % model.
-  if (theta<0)
-    action=1;
-  else
-    action=2;
-  end
-
-  %if num_failures<-20
-  %  if (rand(1) < 0.5)
-  %    action=1;
-  %  else
-  %    action=2;
-  %  end
-  %end
-
+    score1 = transition_probs(state, :, 1) * value;
+    score2 = transition_probs(state, :, 2) * value;
+    if (score1 > score2)
+        action = 1;
+    elseif (score2 > score1)
+        action = 2;
+    else
+        if (rand < 0.5)
+            action = 1;
+        else
+            action = 2;
+        end
+    end
 
   %%% END YOUR CODE %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   
@@ -191,7 +194,6 @@ while num_failures<max_failures
     R=0;
   end
 
-
   %%% CODE HERE: Perform updates %%%%%%%%%
 
   % A transition from 'state' to 'new_state' has just been made using
@@ -200,7 +202,10 @@ while num_failures<max_failures
   % information you are storing on the transitions and on the rewards
   % observed. Do not change the actual MDP parameters, except when the
   % pole falls (the next if block)!
-
+  transition_counts(state, new_state, action) = transition_counts(state, new_state, action) + 1;
+  reward_counts(new_state, 1) = reward_counts(new_state, 1) + R;
+  reward_counts(new_state, 2) = reward_counts(new_state, 2) + 1;
+      
 
   
   % Recompute MDP model whenever pole falls
@@ -213,17 +218,52 @@ while num_failures<max_failures
     % state-action pair has never been tried before, or the state has
     % never been visited before. In that case, you must not change that
     % component (and thus keep it at the initialized uniform distribution).
+      for a = 1:2
+        for s = 1:NUM_STATES
+          den = sum(transition_counts(s, :, a));
+          if (den > 0)
+            smooth_rate = 0.0;
+            transition_probs(s, :, a) = (transition_counts(s, :, a) + smooth_rate) / (den + NUM_STATES * smooth_rate);
+          end
+        end
+      end
 
-
+      for s = 1:NUM_STATES
+        if (reward_counts(s, 2) > 0)
+          reward(s) = reward_counts(s, 1) / reward_counts(s, 2);
+        end
+      end
     
     % Perform value iteration using the new estimated model for the MDP
     % The convergence criterion should be based on TOLERANCE as described
     % at the top of the file.
     % If it converges within one iteration, you may want to update your
     % variable that checks when the whole simulation must end
+    iterations = 0;
+    new_value = zeros(NUM_STATES, 1);
+    while true
+        iterations = iterations + 1;
+        for s = 1:NUM_STATES
+            value1 = transition_probs(s, :, 1) * value;
+            value2 = transition_probs(s, :, 2) * value;
+            new_value(s) = max(value1, value2);
+        end
+        new_value = reward + GAMMA * new_value;
+        diff = max(abs(value - new_value));
+        value = new_value;
+        if (diff < TOLERANCE)
+            break;
+        end
+    end
+   
+    if (iterations == 1)
+        consecutive_no_learning_trials = consecutive_no_learning_trials + 1;
+    else
+        consecutive_no_learning_trials = 0;
+    end
+    fprintf('iterations: %d\tdiff: %f, consecutive_no_learning_trials: %d\n', iterations, diff,consecutive_no_learning_trials);
 
-
-    %pause(0.2); % You can use this to stop for a while!
+    pause(0.1); % You can use this to stop for a while!
     
   end
     
@@ -234,22 +274,21 @@ while num_failures<max_failures
   % Dont change this code: Controls the simulation, and handles the case
   % when the pole fell and the state must be reinitialized
   if (new_state == NUM_STATES)
-    num_failures = num_failures+1
+    num_failures = num_failures+1;
     time_steps_to_failure(num_failures) = time - time_at_start_of_current_trial;
     time_at_start_of_current_trial = time;
 
-    time_steps_to_failure(num_failures)
-
-    if (time_steps_to_failure(num_failures)> ...
-	min_trial_length_to_start_display)
+    if (time_steps_to_failure(num_failures)>	min_trial_length_to_start_display)
       display_started=1;
     end
     
     % Reinitialize state
-    x = -1.1 + rand(1)*2.2
+    half_window_length = 0.8;
+    x = -half_window_length + rand(1)* 2 * half_window_length;
     %x=0.0;
     x_dot = 0.0; theta = 0.0; theta_dot = 0.0;
     state = get_state(x, x_dot, theta, theta_dot);
+    fprintf('num_failures: %d cur_time_steps_to_failure: %d init_x: %.3f\n\n', num_failures, time_steps_to_failure(num_failures), x);
   else 
     state=new_state;
   end

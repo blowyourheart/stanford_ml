@@ -1,0 +1,48 @@
+FUNCTION: 
+  This program is a simulation of the cart and pole dynamic system and
+  a procedure for learning to balance the pole.  Both are described in
+  Barto, Sutton, and Anderson, "Neuronlike Adaptive Elements That Can
+  Solve Difficult Learning Control Problems," IEEE Trans. Syst., Man,
+  Cybern., Vol. SMC-13, pp. 834--846, Sept.--Oct. 1983, and in Sutton, 
+  "Temporal Aspects of Credit Assignment in Reinforcement Learning", PhD
+  Dissertation, Department of Computer and Information Science, University
+  of Massachusetts, Amherst, 1984.
+
+INPUT:
+   There is one run-time inputs to this program: the seed value for the
+random number generator.  To modify the reinforcement learning parameters
+or the cart-pole simulation parameters, modify pole.h
+
+OUTPUT:
+   One line of output is generated per trial: the number of steps for
+which the pole was balanced.   
+
+
+INSTALLATION:
+
+1. Edit the file Makefile, and change the line that begins:
+	INCLUDE =
+
+   to the c header include path on your system.
+   (If you don't know the include path on your system, you might be able
+    to find out with this command:
+    SETENV | grep -i include
+
+    If that doesn't work, ask your local sys. admin.)
+
+2. Type make.  The executable will be called "pole"
+
+3. Run "pole".  You will be prompted for the seed value, and then shown
+   (in text mode) the trials. 
+
+   If you would like to modify the reinforcement learning parameters 
+   (such as the learning rate, discount factor, and decay rate), or the
+   simulation parameters, such as the length of the pole, you can do
+   so by editing pole.h, then doing a make (step 2) again.
+
+
+BUGS AND LIMITATIONS:
+
+  There is not yet a GUI interface to the cart-pole simulation.  Anyone,
+   anyone?
+   
